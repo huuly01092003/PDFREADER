@@ -47,8 +47,11 @@ def is_file_processed(filename):
     except:
         return False
 
-def write_error(filename, error_message):
-    """Ghi file lỗi vào error_log.txt"""
+def write_error(filename, error_message=None):
+    """
+    Ghi file lỗi vào error_log.txt
+    Format: [timestamp] filename - error_message
+    """
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     # Kiểm tra xem file đã tồn tại trong log chưa
@@ -56,10 +59,14 @@ def write_error(filename, error_message):
         with open(ERROR_FILE, 'r', encoding='utf-8') as f:
             existing_logs = f.read()
             # Kiểm tra nếu file name đã có trong log (tránh duplicate)
-            if f"] {filename} -" in existing_logs:
+            if f"] {filename} -" in existing_logs or f"] {filename}\n" in existing_logs:
                 return  # Skip nếu đã tồn tại
     
-    log_entry = f"[{timestamp}] {filename} - {error_message}\n"
+    # GHI TIMESTAMP, FILENAME VÀ ERROR MESSAGE
+    if error_message:
+        log_entry = f"[{timestamp}] {filename} - {error_message}\n"
+    else:
+        log_entry = f"[{timestamp}] {filename} - Lỗi không xác định\n"
     
     try:
         with open(ERROR_FILE, 'a', encoding='utf-8') as f:
@@ -116,3 +123,30 @@ def init_log_files():
                     f.write(f"# Log file created at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             except Exception as e:
                 print(f"Không thể tạo file log: {e}")
+
+def get_error_count():
+    """Đếm số file bị lỗi"""
+    if not os.path.exists(ERROR_FILE):
+        return 0
+    
+    try:
+        with open(ERROR_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            # Đếm các dòng có format [timestamp] filename
+            count = sum(1 for line in lines if line.strip() and line.startswith('['))
+            return count
+    except:
+        return 0
+
+def get_success_count():
+    """Đếm số file thành công"""
+    if not os.path.exists(SUCCESS_FILE):
+        return 0
+    
+    try:
+        with open(SUCCESS_FILE, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            count = sum(1 for line in lines if line.strip() and line.startswith('['))
+            return count
+    except:
+        return 0

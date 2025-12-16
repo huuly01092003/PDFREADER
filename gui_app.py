@@ -763,13 +763,17 @@ class PDFExtractorApp:
         temp_dir = tempfile.mkdtemp()
         
         for i, pdf_path in enumerate(self.pdf_files, 1):
+            filename_for_log = ""  # Khởi tạo sớm để tránh lỗi
+            
             try:
                 self.status_label.config(text=f"Đang xử lý {i}/{total}...")
                 self.progress['value'] = (i / total) * 100
                 
+                # XÁC ĐỊNH TÊN FILE NGAY TỪ ĐẦU
                 if pdf_path.startswith("drive://"):
                     file_id = pdf_path.replace("drive://", "")
                     
+                    # Tìm tên file từ drive_files
                     file_name = None
                     for fid, fname in self.drive_files:
                         if fid == file_id:
@@ -777,56 +781,85 @@ class PDFExtractorApp:
                             break
                     
                     if not file_name:
-                        raise Exception("Không tìm thấy file")
+                        file_name = f"Unknown_Drive_File_{file_id[:8]}"
                     
                     filename_for_log = file_name
                 else:
                     filename_for_log = os.path.basename(pdf_path)
                 
+                # Kiểm tra đã xử lý chưa
                 if is_file_processed(filename_for_log):
                     skipped += 1
                     self.log(f"⏭️ [{i}/{total}] Bỏ qua (đã xử lý): {filename_for_log}\n")
                     write_log(f"Skipped already processed file: {filename_for_log}", "info")
                     continue
                 
+                # XỬ LÝ FILE
                 if pdf_path.startswith("drive://"):
-                    self.log(f"☁️ Đang tải: {file_name}")
+                    self.log(f"☁️ [{i}/{total}] Đang tải: {filename_for_log}")
                     
-                    temp_path = os.path.join(temp_dir, file_name)
-                    self.drive_manager.download_file(file_id, temp_path)
+                    temp_path = os.path.join(temp_dir, filename_for_log)
                     
+                    # Download file
+                    download_success = self.drive_manager.download_file(file_id, temp_path)
+                    if not download_success:
+                        raise Exception("Không thể tải file từ Drive")
+                    
+                    # Process
                     items = process_pdf(temp_path, self.log, self.debug_mode.get())
-                    os.remove(temp_path)
+                    
+                    # Xóa file tạm
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
                 else:
+                    self.log(f"📄 [{i}/{total}] Đang xử lý: {filename_for_log}")
                     items = process_pdf(pdf_path, self.log, self.debug_mode.get())
                 
+                # THÀNH CÔNG
                 success += 1
                 self.log(f"✅ [{i}/{total}] Thành công: {items} items\n")
-                
                 write_success(filename_for_log)
                 
             except Exception as e:
+                # THẤT BẠI - GHI ERROR LOG
                 failed += 1
-                filename = "Drive file" if pdf_path.startswith("drive://") else os.path.basename(pdf_path)
-                self.log(f"❌ [{i}/{total}] Lỗi '{filename}': {e}\n")
                 
-                write_error(filename, str(e))
+                # Đảm bảo có tên file
+                if not filename_for_log:
+                    if pdf_path.startswith("drive://"):
+                        filename_for_log = f"Drive_File_{pdf_path[8:16]}"
+                    else:
+                        filename_for_log = os.path.basename(pdf_path) if pdf_path else "Unknown_File"
+                
+                error_msg = str(e)
+                self.log(f"❌ [{i}/{total}] Lỗi '{filename_for_log}': {error_msg}\n")
+                
+                # GHI VÀO ERROR LOG (tên file + lý do)
+                write_error(filename_for_log, error_msg)
+                write_log(f"Failed to process '{filename_for_log}': {error_msg}", "error")
         
+        # Dọn dẹp
         shutil.rmtree(temp_dir, ignore_errors=True)
         
+        # KẾT QUẢ
         self.log("="*50)
         self.log("🎉 HOÀN TẤT")
         self.log("="*50)
         self.log(f"✅ Thành công: {success} files")
         self.log(f"⏭️ Bỏ qua: {skipped} files (đã xử lý)")
-        self.log(f"❌ Thất bại: {failed} files\n")
+        self.log(f"❌ Thất bại: {failed} files")
+        
+        if failed > 0:
+            self.log(f"\n💡 Xem danh sách file thất bại trong Error Log")
         
         if self.debug_mode.get():
-            self.log("💡 TIP: Debug mode ON - xem preview text trong log")
+            self.log("\n💡 TIP: Debug mode ON - xem preview text trong log")
         
         write_log(f"Processing completed: {success} success, {skipped} skipped, {failed} failed", "info")
         
-        self.status_label.config(text=f"Hoàn tất: {success}/{total} (skip: {skipped})")
+        self.status_label.config(text=f"Hoàn tất: {success}/{total} (skip: {skipped}, fail: {failed})")
         self.progress['value'] = 100
         
         self.refresh_output()
