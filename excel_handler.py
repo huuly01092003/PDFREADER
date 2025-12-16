@@ -4,22 +4,22 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from config import EXCEL_FILE
 
 def init_excel():
-    '''Khởi tạo file Excel với header đẹp'''
-    # Nếu file tồn tại và hợp lệ, giữ nguyên
+    '''Khởi tạo file Excel với header đầy đủ'''
     if os.path.exists(EXCEL_FILE):
         try:
             wb = load_workbook(EXCEL_FILE)
             ws = wb.active
             
-            # Kiểm tra có header không
             if ws.max_row >= 1:
                 first_row = [cell.value for cell in ws[1]]
                 expected_headers = [
                     "ThoiGianThucThi", "FileName", "PONumber", "SKUNumber",
-                    "Description", "BuyCost", "NetBuyCost", "QtyOrdCS", "ExtendedCost"
+                    "Description", "Vendor", "PartNo",
+                    "BuyCost", "NetBuyCost", 
+                    "QtyOrdCS", "QtyOrdPcs", "QtyRecPcs",
+                    "ExtendedCost"
                 ]
                 
-                # Nếu header đúng, giữ file
                 if first_row == expected_headers:
                     wb.close()
                     return True
@@ -27,24 +27,25 @@ def init_excel():
             wb.close()
         except Exception as e:
             print(f"File Excel lỗi: {e}, tạo lại...")
-            # Nếu lỗi, xóa và tạo mới
             try:
                 os.remove(EXCEL_FILE)
             except:
                 pass
     
-    # Tạo file mới với header
+    # Tạo file mới với header đầy đủ
     wb = Workbook()
     ws = wb.active
     ws.title = "DATA"
     
-    # Headers
+    # Headers đầy đủ
     headers = [
         "ThoiGianThucThi", "FileName", "PONumber", "SKUNumber",
-        "Description", "BuyCost", "NetBuyCost", "QtyOrdCS", "ExtendedCost"
+        "Description", "VendorPartNo", "SellUM", "BuyUM",
+        "BuyCost", "NetBuyCost", 
+        "QtyOrdCS", "QtyOrdPcs", "QtyRecPcs",
+        "ExtendedCost"
     ]
     
-    # Thêm header với style
     ws.append(headers)
     
     # Style cho header
@@ -64,24 +65,27 @@ def init_excel():
         'C': 15,  # PONumber
         'D': 15,  # SKUNumber
         'E': 40,  # Description
-        'F': 12,  # BuyCost
-        'G': 12,  # NetBuyCost
-        'H': 12,  # QtyOrdCS
-        'I': 15   # ExtendedCost
+        'F': 10,  # Vendor
+        'G': 10,  # PartNo
+        'H': 12,  # BuyCost
+        'I': 12,  # NetBuyCost
+        'J': 12,  # QtyOrdCS
+        'K': 12,  # QtyOrdPcs
+        'L': 12,  # QtyRecPcs
+        'M': 15   # ExtendedCost
     }
     
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
     
-    # Freeze header row
     ws.freeze_panes = 'A2'
     
     wb.save(EXCEL_FILE)
-    print(f"✅ Đã tạo file Excel mới: {EXCEL_FILE}")
+    print(f"✅ Đã tạo file Excel mới với {len(headers)} cột")
     return True
 
 def get_existing_records():
-    '''Lấy danh sách các record đã tồn tại (để check duplicate)'''
+    '''Lấy danh sách các record đã tồn tại'''
     if not os.path.exists(EXCEL_FILE):
         return set()
     
@@ -90,10 +94,8 @@ def get_existing_records():
         ws = wb.active
         
         existing = set()
-        # Bắt đầu từ row 2 (skip header)
         for row in ws.iter_rows(min_row=2, values_only=True):
             if row[1] and row[2] and row[3]:  # FileName, PONumber, SKUNumber
-                # Tạo key duy nhất: filename-po-sku
                 key = f"{row[1]}|{row[2]}|{row[3]}"
                 existing.add(key)
         
@@ -105,13 +107,11 @@ def get_existing_records():
         return set()
 
 def append_excel(rows):
-    '''Thêm dữ liệu vào Excel (với duplicate check)'''
+    '''Thêm dữ liệu vào Excel'''
     try:
-        # Đảm bảo file tồn tại
         if not os.path.exists(EXCEL_FILE):
             init_excel()
         
-        # Lấy danh sách record đã tồn tại
         existing_records = get_existing_records()
         
         wb = load_workbook(EXCEL_FILE)
@@ -121,15 +121,14 @@ def append_excel(rows):
         skipped_count = 0
         
         for r in rows:
-            # Kiểm tra duplicate: filename-po-sku
+            # Check duplicate: filename|po|sku
             if len(r) >= 4:
-                key = f"{r[1]}|{r[2]}|{r[3]}"  # FileName|PONumber|SKUNumber
+                key = f"{r[1]}|{r[2]}|{r[3]}"
                 
                 if key in existing_records:
                     skipped_count += 1
-                    continue  # Skip duplicate
+                    continue
                 
-                # Thêm vào set để tránh duplicate trong cùng batch
                 existing_records.add(key)
             
             ws.append(r)
@@ -138,7 +137,7 @@ def append_excel(rows):
         wb.save(EXCEL_FILE)
         
         if skipped_count > 0:
-            print(f"ℹ️ Đã thêm {added_count} dòng, bỏ qua {skipped_count} dòng trùng lặp")
+            print(f"ℹ️ Đã thêm {added_count} dòng, bỏ qua {skipped_count} dòng trùng")
         
         return True
         
@@ -148,7 +147,6 @@ def append_excel(rows):
 
 def read_excel_data():
     '''Đọc dữ liệu từ Excel'''
-    # Nếu file không tồn tại, tạo mới và return empty
     if not os.path.exists(EXCEL_FILE):
         print("⚠️ File Excel không tồn tại, tạo mới...")
         init_excel()
@@ -159,9 +157,8 @@ def read_excel_data():
         ws = wb.active
         
         data = []
-        # Bắt đầu từ row 2 (skip header)
         for row in ws.iter_rows(min_row=2, values_only=True):
-            if row[0]:  # Kiểm tra dòng không trống
+            if row[0]:
                 data.append(row)
         
         wb.close()
@@ -169,7 +166,6 @@ def read_excel_data():
         
     except Exception as e:
         print(f"❌ Lỗi đọc Excel: {e}")
-        # Nếu lỗi, tạo lại file
         try:
             os.remove(EXCEL_FILE)
         except:
@@ -178,7 +174,7 @@ def read_excel_data():
         return []
 
 def clear_excel_data():
-    '''Xóa tất cả dữ liệu (giữ header)'''
+    '''Xóa tất cả dữ liệu'''
     try:
         if not os.path.exists(EXCEL_FILE):
             init_excel()
@@ -187,7 +183,6 @@ def clear_excel_data():
         wb = load_workbook(EXCEL_FILE)
         ws = wb.active
         
-        # Xóa tất cả dòng trừ header
         ws.delete_rows(2, ws.max_row)
         
         wb.save(EXCEL_FILE)
@@ -216,8 +211,8 @@ def get_excel_stats():
         
         for row in data:
             if len(row) >= 3:
-                files.add(row[1])  # FileName
-                pos.add(row[2])    # PONumber
+                files.add(row[1])
+                pos.add(row[2])
         
         return {
             'total_rows': len(data),

@@ -1,49 +1,25 @@
-# Log file created at 2025-12-16 07:48:03
-[2025-12-16 07:48:03] [INFO] App started
-[2025-12-16 07:48:07] [INFO] 🔐 Đang xác thực Google Drive...
-[2025-12-16 07:48:08] [INFO] ✅ ✅ Kết nối thành công (Service Account)
-[2025-12-16 07:48:09] [INFO] 📂 Đang tải folders được share...
-[2025-12-16 07:48:09] [INFO] ✅ Tìm thấy 1 folder được share
-[2025-12-16 07:48:11] [INFO] 📂 Mở folder: PDF_TEST
-[2025-12-16 07:48:17] [INFO] 📂 Đang tải file từ: Shared Folders (ID: root)
-[2025-12-16 07:48:17] [INFO] ⚠️ Đang ở root, sẽ lấy file từ TẤT CẢ shared folders...
-[2025-12-16 07:48:17] [INFO]   📁 Đang quét: PDF_TEST
-[2025-12-16 07:48:17] [INFO]     → Tìm thấy 2 file
-[2025-12-16 07:48:17] [INFO] ✅ Tổng cộng: 2 file PDF
-[2025-12-16 07:48:17] [INFO] ✅ Đã thêm 2 file từ Drive
-[2025-12-16 07:48:17] [INFO] Added 2 files from Google Drive folder
-[2025-12-16 07:48:20] [INFO] 
-==================================================
-[2025-12-16 07:48:20] [INFO] 🚀 Bắt đầu xử lý 2 files
-[2025-12-16 07:48:20] [INFO] 🐛 DEBUG MODE: ON - Preview text trong log
-[2025-12-16 07:48:20] [INFO] ==================================================
-
-[2025-12-16 07:48:20] [INFO] Started processing 2 files
-[2025-12-16 07:48:20] [INFO] ☁️ Đang tải: coop thang loi tc.pdf
-[2025-12-16 07:48:21] [INFO] Đang xử lý: coop thang loi tc.pdf
-[2025-12-16 07:48:21] [INFO]   📝 Debug - Text preview (first 500 chars):
-[2025-12-16 07:48:21] [INFO]   POM343 Date: 7/07/25 | CMT570TTHP JDA Software Version 7.7.0 (PDN_DC) Page: 1 | P/O Number: 94293518-00 Purchase Order Time: 10:56:10 | P/O Location: 5701 | Bill To: Vendor: 12551 | Head Office SGC - 1 *222-CTyTNHH MTVDuocPham Hoa LinhM Buyer - ZR4 CMT570TTHP Entry Date - 7/07/25 | Dept - *ALL Expected Receipt Date- 13/07/25 | Sub Dpt - *ALL Cancel Date - 10/09/25 | Terms - 6 10TH PROX/CUTOFF 5TH Recvd Date - 0/00/00 | Freight - 1 NO FREIGHT ALLOWED Receiver No - | Ship To: Status - 3 RELEASED | TC Thang Loi-Truong C
-[2025-12-16 07:48:21] [INFO]   ✓ PO: 94293518-00 | Items: 4
-[2025-12-16 07:48:21] [INFO] ✅ [1/2] Thành công: 4 items
-
-[2025-12-16 07:48:22] [INFO] ☁️ Đang tải: thanh ha.pdf
-[2025-12-16 07:48:22] [INFO] Đang xử lý: thanh ha.pdf
-[2025-12-16 07:48:22] [INFO]   📝 Debug - Text preview (first 500 chars):
-[2025-12-16 07:48:23] [INFO]   ﻿POM343 Date: 7/07/25 | CMTTHATTHP JDA Software Version 7.7.0 (PDN_DC) Page: 1 | P/O Number: 94292501-00 Purchase Order Time: 10:41:21 | P/O Location: 848 | Bill To: Vendor: 12551 | Head Office SGC - 1 *222-CTyTNHH MTVDuocPham Hoa LinhMN Buyer - HM5 Ng T Minh Hieu Entry Date - 7/07/25 | Dept - *ALL Expected Receipt Date- 13/07/25 | Sub Dpt - *ALL Cancel Date - 10/09/25 | Terms - 6 10TH PROX/CUTOFF 5TH Recvd Date - 0/00/00 | Freight - 1 NO FREIGHT ALLOWED Receiver No - | Ship To: Status - 3 RELEASED | Trung chuyen Tha
-[2025-12-16 07:48:23] [INFO]   ✓ PO: 94292501-00 | Items: 12
-[2025-12-16 07:48:23] [INFO] ✅ [2/2] Thành công: 12 items
-
-[2025-12-16 07:48:23] [INFO] ==================================================
-[2025-12-16 07:48:23] [INFO] 🎉 HOÀN TẤT
-[2025-12-16 07:48:23] [INFO] ==================================================
-[2025-12-16 07:48:23] [INFO] ✅ Thành công: 2 files
-[2025-12-16 07:48:23] [INFO] ⏭️ Bỏ qua: 0 files (đã xử lý)
-[2025-12-16 07:48:23] [INFO] ❌ Thất bại: 0 files
-
-[2025-12-16 07:48:23] [INFO] 💡 TIP: Debug mode ON - xem preview text trong log
-[2025-12-16 07:48:23] [INFO] Processing completed: 2 success, 0 skipped, 0 failed
-[2025-12-16 07:48:32] [INFO] Viewed success log
-[2025-12-16 07:48:37] [INFO] Viewed error log
-[2025-12-16 07:48:42] [INFO] Viewed app log
-[2025-12-16 07:48:49] [INFO] 📊 Đã mở Excel
-[2025-12-16 07:48:49] [INFO] Opened Excel file
+[2025-12-16 09:21:24] [INFO] 🗑️ Đã xóa tất cả 2 file
+[2025-12-16 09:21:24] [INFO] Cleared all 2 files from list
+[2025-12-16 09:27:15] [INFO] 📂 Đang tải danh sách folder được share...
+[2025-12-16 09:27:16] [INFO] ✅ Tìm thấy 1 folder được share
+[2025-12-16 09:27:48] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:49] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:49] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:50] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:50] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:50] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:50] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:50] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:51] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:51] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:51] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:51] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:51] [INFO] ⚠️ Không có file nào
+[2025-12-16 09:27:52] [INFO] ⚠️ Chưa chọn file
+[2025-12-16 09:27:52] [INFO] ⚠️ Chưa chọn file
+[2025-12-16 09:27:52] [INFO] ⚠️ Chưa chọn file
+[2025-12-16 09:27:53] [INFO] ⚠️ Chưa chọn file
+[2025-12-16 09:27:53] [INFO] ⚠️ Chưa chọn file
+[2025-12-16 09:27:53] [INFO] ⚠️ Chưa chọn file
+[2025-12-16 09:27:53] [INFO] ⚠️ Chưa chọn file
+[2025-12-16 09:27:53] [INFO] ⚠️ Chưa chọn file

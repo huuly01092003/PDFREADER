@@ -39,7 +39,6 @@ class LogViewerDialog:
     
     def _create_ui(self):
         """Tạo giao diện"""
-        # Header
         header = tk.Frame(self.dialog, bg="#34495e", height=50)
         header.pack(fill=tk.X)
         header.pack_propagate(False)
@@ -55,7 +54,6 @@ class LogViewerDialog:
             fg="white"
         ).pack(pady=12)
         
-        # Toolbar
         toolbar = tk.Frame(self.dialog, bg="white", pady=8)
         toolbar.pack(fill=tk.X, padx=10)
         
@@ -95,7 +93,6 @@ class LogViewerDialog:
             pady=5
         ).pack(side=tk.LEFT, padx=5)
         
-        # Text area
         text_frame = tk.Frame(self.dialog, bg="white")
         text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -110,7 +107,6 @@ class LogViewerDialog:
         )
         self.text_widget.pack(fill=tk.BOTH, expand=True)
         
-        # Status
         self.status_label = tk.Label(
             self.dialog,
             text="",
@@ -120,7 +116,6 @@ class LogViewerDialog:
         )
         self.status_label.pack(pady=5)
         
-        # Close button
         tk.Button(
             self.dialog,
             text="❌ Đóng",
@@ -139,7 +134,6 @@ class LogViewerDialog:
         self.text_widget.delete(1.0, tk.END)
         self.text_widget.insert(1.0, content)
         
-        # Count lines
         lines = content.count('\n')
         self.status_label.config(text=f"Tổng: {lines} dòng")
     
@@ -178,7 +172,7 @@ class PDFExtractorApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Smart PDF Data Extractor Pro v2.1")
-        self.root.geometry("1200x700")
+        self.root.geometry("1400x700")
         self.root.configure(bg="#f0f0f0")
         
         self.pdf_files = []
@@ -187,7 +181,6 @@ class PDFExtractorApp:
         self.drive_manager = GoogleDriveManager()
         self.debug_mode = tk.BooleanVar(value=True)
         
-        # Khởi tạo log files
         init_log_files()
         write_log("App started", "info")
         
@@ -236,7 +229,6 @@ class PDFExtractorApp:
             fg="#2c3e50"
         ).pack(pady=8)
         
-        # Listbox
         list_frame = tk.Frame(left_frame, bg="white")
         list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         
@@ -256,10 +248,8 @@ class PDFExtractorApp:
         self.file_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.file_listbox.yview)
         
-        # Buttons
         self._create_file_buttons(left_frame)
         
-        # DEBUG CHECKBOX
         debug_frame = tk.Frame(left_frame, bg="white")
         debug_frame.pack(fill=tk.X, padx=10, pady=5)
         
@@ -276,7 +266,6 @@ class PDFExtractorApp:
     
     def _create_file_buttons(self, parent):
         """Nút quản lý file"""
-        # Row 1
         btn_frame1 = tk.Frame(parent, bg="white")
         btn_frame1.pack(fill=tk.X, padx=10, pady=5)
         
@@ -300,7 +289,6 @@ class PDFExtractorApp:
                 pady=5
             ).pack(side=tk.LEFT, padx=2, expand=True, fill=tk.X)
         
-        # Row 2
         btn_frame2 = tk.Frame(parent, bg="white")
         btn_frame2.pack(fill=tk.X, padx=10, pady=5)
         
@@ -337,7 +325,6 @@ class PDFExtractorApp:
             fg="#2c3e50"
         ).pack(pady=8)
         
-        # Log text
         log_frame = tk.Frame(middle_frame, bg="white")
         log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         
@@ -358,7 +345,6 @@ class PDFExtractorApp:
         self.log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         log_scrollbar.config(command=self.log_text.yview)
         
-        # Progress
         self.progress = ttk.Progressbar(middle_frame, mode='determinate')
         self.progress.pack(fill=tk.X, padx=10, pady=5)
         
@@ -371,7 +357,6 @@ class PDFExtractorApp:
         )
         self.status_label.pack(pady=3)
         
-        # Process button
         self.process_btn = tk.Button(
             middle_frame,
             text="🚀 Bắt đầu xử lý",
@@ -387,11 +372,10 @@ class PDFExtractorApp:
         self.process_btn.pack(pady=12)
     
     def _create_right_panel(self, parent):
-        """Panel output"""
+        """Panel output với đầy đủ cột"""
         right_frame = tk.Frame(parent, bg="white", relief=tk.RAISED, bd=1)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
-        # Header
         output_header = tk.Frame(right_frame, bg="white")
         output_header.pack(fill=tk.X, pady=8, padx=10)
         
@@ -403,7 +387,6 @@ class PDFExtractorApp:
             fg="#2c3e50"
         ).pack(side=tk.LEFT)
         
-        # Row 1 buttons
         tk.Button(
             output_header,
             text="📄 Log",
@@ -443,7 +426,6 @@ class PDFExtractorApp:
             pady=4
         ).pack(side=tk.RIGHT, padx=2)
         
-        # Second row
         output_header2 = tk.Frame(right_frame, bg="white")
         output_header2.pack(fill=tk.X, pady=(0, 8), padx=10)
         
@@ -486,7 +468,6 @@ class PDFExtractorApp:
             pady=4
         ).pack(side=tk.RIGHT, padx=2)
         
-        # Treeview
         tree_frame = tk.Frame(right_frame, bg="white")
         tree_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         
@@ -496,9 +477,11 @@ class PDFExtractorApp:
         tree_scroll_x = tk.Scrollbar(tree_frame, orient=tk.HORIZONTAL)
         tree_scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
         
+        # CẬP NHẬT: Thêm các cột mới
         self.output_tree = ttk.Treeview(
             tree_frame,
-            columns=("Time", "File", "PO", "SKU", "Desc", "Cost", "Qty", "Total"),
+            columns=("Time", "File", "PO", "SKU", "Desc", "VendorPart", "SellUM", "BuyUM",
+                     "Buy", "Net", "QtyCS", "QtyOrdPcs", "QtyRecPcs", "Extended"),
             show="headings",
             yscrollcommand=tree_scroll_y.set,
             xscrollcommand=tree_scroll_x.set,
@@ -508,10 +491,12 @@ class PDFExtractorApp:
         tree_scroll_y.config(command=self.output_tree.yview)
         tree_scroll_x.config(command=self.output_tree.xview)
         
-        # Columns
+        # Columns với width phù hợp
         columns = [
-            ("Time", 85), ("File", 120), ("PO", 100), ("SKU", 90),
-            ("Desc", 150), ("Cost", 80), ("Qty", 60), ("Total", 90)
+            ("Time", 65), ("File", 100), ("PO", 90), ("SKU", 80),
+            ("Desc", 120), ("VendorPart", 115), ("SellUM", 60), ("BuyUM", 60),
+            ("Buy", 75), ("Net", 75), ("QtyCS", 60), 
+            ("QtyOrdPcs", 70), ("QtyRecPcs", 70), ("Extended", 85)
         ]
         
         for col_id, width in columns:
@@ -520,7 +505,6 @@ class PDFExtractorApp:
         
         self.output_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-        # Stats
         self.stats_label = tk.Label(
             right_frame,
             text="Tổng: 0 dòng",
@@ -534,22 +518,18 @@ class PDFExtractorApp:
         """Footer"""
         tk.Label(
             self.root,
-            text="💡 Miễn phí 100% | Version 2.1 - Enhanced | With logging & duplicate prevention",
+            text="💡 Version 2.1 - Full Data Extraction | With 14 columns",
             font=("Segoe UI", 8),
             bg="#ecf0f1",
             fg="#7f8c8d",
             pady=8
         ).pack(side=tk.BOTTOM, fill=tk.X)
     
-    # ========== METHODS ==========
-    
     def log(self, message):
         """Ghi log vào UI và file"""
         self.log_text.insert(tk.END, f"{message}\n")
         self.log_text.see(tk.END)
         self.root.update_idletasks()
-        
-        # Ghi vào file log
         write_log(message, "info")
     
     def add_files(self):
@@ -678,7 +658,7 @@ class PDFExtractorApp:
             write_log(f"Cleared all {count} files from list", "info")
     
     def refresh_output(self):
-        """Làm mới output"""
+        """Làm mới output với đầy đủ cột"""
         for item in self.output_tree.get_children():
             self.output_tree.delete(item)
         
@@ -686,16 +666,22 @@ class PDFExtractorApp:
             data = read_excel_data()
             
             for row in data:
-                if len(row) >= 9:
+                if len(row) >= 14:
                     display_row = (
-                        row[0],
-                        row[1][:20] + "..." if len(str(row[1])) > 20 else row[1],
-                        row[2],
-                        row[3],
-                        str(row[4])[:30] + "..." if len(str(row[4])) > 30 else row[4],
-                        row[5],
-                        row[7],
-                        row[8]
+                        row[0][:5] if row[0] else "",  # Time
+                        str(row[1])[:15] + "..." if len(str(row[1])) > 15 else row[1],  # File
+                        row[2],  # PO
+                        row[3],  # SKU
+                        str(row[4])[:20] + "..." if len(str(row[4])) > 20 else row[4],  # Desc
+                        str(row[5])[:12] + "..." if len(str(row[5])) > 12 else row[5],  # VendorPart
+                        row[6],  # SellUM
+                        row[7],  # BuyUM
+                        row[8],  # Buy
+                        row[9],  # Net
+                        row[10], # QtyCS
+                        row[11], # QtyOrdPcs
+                        row[12], # QtyRecPcs
+                        row[13]  # Extended
                     )
                     self.output_tree.insert("", tk.END, values=display_row)
             
@@ -753,13 +739,12 @@ class PDFExtractorApp:
         if self.is_processing:
             messagebox.showinfo("Thông báo", "Đang xử lý...")
             return
-        
         self.is_processing = True
         self.process_btn.config(state=tk.DISABLED, text="⏳ Đang xử lý...")
         
         thread = threading.Thread(target=self.process_files, daemon=True)
         thread.start()
-    
+
     def process_files(self):
         """Xử lý các file"""
         total = len(self.pdf_files)
@@ -782,7 +767,6 @@ class PDFExtractorApp:
                 self.status_label.config(text=f"Đang xử lý {i}/{total}...")
                 self.progress['value'] = (i / total) * 100
                 
-                # Xác định tên file
                 if pdf_path.startswith("drive://"):
                     file_id = pdf_path.replace("drive://", "")
                     
@@ -799,14 +783,12 @@ class PDFExtractorApp:
                 else:
                     filename_for_log = os.path.basename(pdf_path)
                 
-                # KIỂM TRA FILE ĐÃ XỬ LÝ THÀNH CÔNG CHƯA
                 if is_file_processed(filename_for_log):
                     skipped += 1
                     self.log(f"⏭️ [{i}/{total}] Bỏ qua (đã xử lý): {filename_for_log}\n")
                     write_log(f"Skipped already processed file: {filename_for_log}", "info")
                     continue
                 
-                # Xử lý file
                 if pdf_path.startswith("drive://"):
                     self.log(f"☁️ Đang tải: {file_name}")
                     
@@ -821,7 +803,6 @@ class PDFExtractorApp:
                 success += 1
                 self.log(f"✅ [{i}/{total}] Thành công: {items} items\n")
                 
-                # Ghi vào success log
                 write_success(filename_for_log)
                 
             except Exception as e:
@@ -829,7 +810,6 @@ class PDFExtractorApp:
                 filename = "Drive file" if pdf_path.startswith("drive://") else os.path.basename(pdf_path)
                 self.log(f"❌ [{i}/{total}] Lỗi '{filename}': {e}\n")
                 
-                # Ghi vào error log
                 write_error(filename, str(e))
         
         shutil.rmtree(temp_dir, ignore_errors=True)

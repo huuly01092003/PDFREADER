@@ -19,7 +19,6 @@ def pdf_to_text(pdf_path):
     except:
         pass
     
-    # OCR fallback
     if len(text.strip()) < 50:
         try:
             with pdfplumber.open(pdf_path) as pdf:
@@ -35,37 +34,28 @@ def is_number(s):
     '''Kiểm tra có phải số không'''
     if not s:
         return False
-    s = s.replace(",", "").strip()
-    return bool(re.match(r'^-?\d+\.?\d*$', s))
+    s = str(s).replace(",", "").strip()
+    return bool(re.match(r'^-?\d*\.?\d+$', s))
 
 def clean_number(s):
     '''Làm sạch số'''
     if not s:
         return ""
     s = str(s).replace(",", "").strip()
-    return re.sub(r'[^\d.-]', '', s)
+    cleaned = re.sub(r'[^\d.-]', '', s)
+    return cleaned
 
 def extract_po_number(text: str) -> Optional[str]:
-    '''Tìm PO Number - CẢI THIỆN'''
-    # Nhiều pattern khác nhau
+    '''Tìm PO Number'''
     patterns = [
-        # Format chuẩn: P/O Number: 123-456
         r"P[/\\]O\s+Number[:\s]+(\d+[-/]\d+(?:[-/]\d+)?)",
         r"PO\s+Number[:\s]+(\d+[-/]\d+(?:[-/]\d+)?)",
         r"Purchase\s+Order[:\s]+(\d+[-/]\d+(?:[-/]\d+)?)",
-        
-        # Format không có "Number": P/O: 123-456
         r"P[/\\]O[:\s]+(\d+[-/]\d+(?:[-/]\d+)?)",
         r"PO[:\s]+(\d+[-/]\d+(?:[-/]\d+)?)",
-        
-        # Format có # : P/O #123-456
         r"P[/\\]O\s*#\s*(\d+[-/]\d+(?:[-/]\d+)?)",
         r"PO\s*#\s*(\d+[-/]\d+(?:[-/]\d+)?)",
-        
-        # Format loose: tìm số có dạng XXX-XXX hoặc XXX/XXX
         r"(?:P[/\\]O|PO|Purchase\s+Order).*?(\d{2,6}[-/]\d{2,6}(?:[-/]\d{1,6})?)",
-        
-        # Tìm bất kỳ số nào có format XXX-XXX (fallback)
         r"\b(\d{3,6}[-/]\d{3,6}(?:[-/]\d{1,6})?)\b",
     ]
     
@@ -73,79 +63,121 @@ def extract_po_number(text: str) -> Optional[str]:
         match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
         if match:
             po = match.group(1).strip()
-            # Validate: phải có ít nhất 1 dấu - hoặc /
             if '-' in po or '/' in po:
                 return po
     
     return None
 
 def parse_data_line(line: str) -> Optional[Dict]:
-    '''Parse một dòng data'''
-    # Tìm SKU: 6-8 số + dấu - hoặc / + 1 số
+    '''
+    Parse một dòng data theo format CHÍNH XÁC:
+    SKU | Description | VendorPartNo | sell Buy U/M | Buy U/M | BuyCost | NetBuyCost | QtyOrdCS | QtyOrdPcs | QtyRecPcs | ExtendedCost
+    
+    Ví dụ:
+    3571807-4 KDR dIieu NGOC CHAU 170g EA C72 3727631.00 3727631.00 .25 18.00 .00 931907.75
+    3134867-9 DD VSPN DAHUONG co voi 120ml 368004213134867 EA C80 35181.90 35181.90 30.00 30.00 .00
+    
+    Trong đó:
+    - VendorPartNo = 368004213134867 (số dài) hoặc có thể không có
+    - EA, C72, C80 = đơn vị đo (sell Buy U/M, Buy U/M)
+    '''
+    # Tìm SKU
     sku_match = re.search(r'\b(\d{6,8}[-/]\d)\b', line)
     if not sku_match:
         return None
     
     sku = sku_match.group(1)
-    tokens = line.split()
-    
-    sku_idx = -1
-    for i, token in enumerate(tokens):
-        if sku in token:
-            sku_idx = i
-            break
-    
-    if sku_idx == -1:
-        return None
-    
-    desc_tokens = []
-    numbers = []
+    sku_end = sku_match.end()
     
     # Lấy phần sau SKU
-    for i in range(sku_idx + 1, len(tokens)):
-        token = tokens[i]
-        if is_number(token):
-            num_val = clean_number(token)
-            if num_val:
-                try:
-                    val = float(num_val)
-                    if val < 10000000000:
-                        numbers.append(num_val)
-                except:
-                    pass
-        elif not re.match(r'^[A-Z]{1,3}\d*$', token):
-            desc_tokens.append(token)
+    after_sku = line[sku_end:].strip()
+    tokens = after_sku.split()
     
-    description = " ".join(desc_tokens)
-    
-    if len(numbers) < 4:
+    if len(tokens) < 4:
         return None
     
-    extended_cost = numbers[-1]
+    # CHIẾN LƯỢC: Tìm đơn vị đo (EA, DD) + (C72, D00, C80, etc.)
+    # Pattern: 2-3 chữ cái + space + 1 chữ + 2-3 số
+    unit_pattern = r'\b([A-Z]{2,3})\s+([A-Z]\d{2,3}|[A-Z]{3})\b'
+    unit_match = re.search(unit_pattern, after_sku)
     
-    # Tìm Qty (thường là số nhỏ 0-1000)
-    qty_candidates = []
-    for i in range(len(numbers) - 1, -1, -1):
-        try:
-            val = float(numbers[i])
-            if 0 < val <= 1000:
-                qty_candidates.append((i, numbers[i]))
-        except:
-            pass
+    if not unit_match:
+        return None
     
-    qty_ord_cs = qty_candidates[1][1] if len(qty_candidates) > 1 else (
-        qty_candidates[0][1] if qty_candidates else numbers[-2]
-    )
+    sell_um = unit_match.group(1)  # EA, DD
+    buy_um = unit_match.group(2)   # C72, D00, C80
+    unit_start = unit_match.start()
+    unit_end = unit_match.end()
     
-    buy_cost = numbers[0] if len(numbers) > 0 else ""
-    net_buy_cost = numbers[1] if len(numbers) > 1 else buy_cost
+    # Description + VendorPartNo = phần trước đơn vị đo
+    desc_vendor_part = after_sku[:unit_start].strip()
+    
+    # Các số = phần sau đơn vị đo
+    numbers_part = after_sku[unit_end:].strip()
+    
+    # Phân tích desc_vendor_part:
+    # - Phần text = Description
+    # - Số dài cuối (nếu có) = VendorPartNo
+    desc_vendor_tokens = desc_vendor_part.split()
+    
+    description_tokens = []
+    vendor_part_no = ""
+    
+    for token in desc_vendor_tokens:
+        # Nếu token là số dài (>= 10 chữ số) → VendorPartNo
+        if token.isdigit() and len(token) >= 10:
+            vendor_part_no = token
+        else:
+            description_tokens.append(token)
+    
+    description = " ".join(description_tokens).strip()
+    
+    # Parse các số
+    number_tokens = []
+    for token in numbers_part.split():
+        if is_number(token):
+            number_tokens.append(clean_number(token))
+    
+    # Cần ít nhất 4 số: BuyCost, NetBuyCost, QtyOrdCS, Extended (tối thiểu)
+    if len(number_tokens) < 4:
+        return None
+    
+    buy_cost = number_tokens[0]
+    net_buy_cost = number_tokens[1]
+    qty_ord_cs = number_tokens[2]
+    
+    qty_ord_pcs = ""
+    qty_rec_pcs = ""
+    extended_cost = number_tokens[-1]
+    
+    if len(number_tokens) >= 5:
+        qty_ord_pcs = number_tokens[3]
+    if len(number_tokens) >= 6:
+        qty_rec_pcs = number_tokens[4]
+        extended_cost = number_tokens[5]
+    elif len(number_tokens) >= 5:
+        extended_cost = number_tokens[4]
+    
+    # Validate extended cost (phải là số lớn)
+    try:
+        ext_val = float(extended_cost)
+        if ext_val < 10 and len(number_tokens) >= 5:
+            qty_rec_pcs = extended_cost
+            extended_cost = number_tokens[-2]
+    except:
+        pass
     
     return {
         "sku": sku,
-        "description": description.strip(),
+        "description": description,
+        "vendor_part_no": vendor_part_no,
+        "sell_um": sell_um,
+        "buy_um": buy_um,
         "buy_cost": buy_cost,
         "net_buy_cost": net_buy_cost,
         "qty_ord_cs": qty_ord_cs,
+        "qty_ord_pcs": qty_ord_pcs,
+        "qty_rec_pcs": qty_rec_pcs,
         "extended_cost": extended_cost
     }
 
@@ -179,10 +211,9 @@ def process_pdf(pdf_path, log_callback=None, debug=False):
     
     text = pdf_to_text(pdf_path)
     
-    # DEBUG MODE: CHỈ HIỂN thị preview trong log, KHÔNG LƯU FILE
     if debug and len(text.strip()) >= 20:
-        log(f"  📝 Debug - Text preview (first 500 chars):")
-        preview = text[:500].replace('\n', ' | ')
+        log(f"  📝 Debug - Text preview (first 800 chars):")
+        preview = text[:800].replace('\n', ' | ')
         log(f"  {preview}")
     
     if len(text.strip()) < 20:
@@ -190,12 +221,11 @@ def process_pdf(pdf_path, log_callback=None, debug=False):
     
     po_number = extract_po_number(text)
     if not po_number:
-        # Hiển thị preview để debug
         log(f"  ⚠️ Không tìm thấy PO Number")
         log(f"  📄 Text preview (first 500 chars):")
         preview = text[:500].replace('\n', ' | ')
         log(f"  {preview}")
-        raise Exception("Không tìm thấy PO Number - Xem log preview để biết format")
+        raise Exception("Không tìm thấy PO Number")
     
     items = extract_items_smart(text)
     if not items:
@@ -203,16 +233,32 @@ def process_pdf(pdf_path, log_callback=None, debug=False):
     
     log(f"  ✓ PO: {po_number} | Items: {len(items)}")
     
+    if debug and items:
+        log(f"  🔍 Debug - Item đầu tiên:")
+        first = items[0]
+        log(f"    SKU: {first['sku']}")
+        log(f"    Desc: {first['description']}")
+        log(f"    VendorPartNo: {first['vendor_part_no']}")
+        log(f"    SellUM: {first['sell_um']}")
+        log(f"    BuyUM: {first['buy_um']}")
+        log(f"    Buy: {first['buy_cost']}")
+        log(f"    Net: {first['net_buy_cost']}")
+        log(f"    QtyCS: {first['qty_ord_cs']}")
+        log(f"    QtyOrdPcs: {first['qty_ord_pcs']}")
+        log(f"    QtyRecPcs: {first['qty_rec_pcs']}")
+        log(f"    Extended: {first['extended_cost']}")
+    
     now = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
     rows = []
     for item in items:
         rows.append([
             now, filename, po_number, item["sku"], item["description"],
+            item["vendor_part_no"], item["sell_um"], item["buy_um"],
             item["buy_cost"], item["net_buy_cost"], 
-            item["qty_ord_cs"], item["extended_cost"]
+            item["qty_ord_cs"], item["qty_ord_pcs"], item["qty_rec_pcs"],
+            item["extended_cost"]
         ])
     
-    # Append với error handling
     if append_excel(rows):
         return len(rows)
     else:
