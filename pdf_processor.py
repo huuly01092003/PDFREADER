@@ -70,16 +70,15 @@ def extract_po_number(text: str) -> Optional[str]:
 
 def parse_data_line(line: str) -> Optional[Dict]:
     '''
-    Parse một dòng data theo format CHÍNH XÁC:
-    SKU | Description | VendorPartNo | sell Buy U/M | Buy U/M | BuyCost | NetBuyCost | QtyOrdCS | QtyOrdPcs | QtyRecPcs | ExtendedCost
+    Parse dòng data - HỖ TRỢ 2 FORMAT:
     
-    Ví dụ:
-    3571807-4 KDR dIieu NGOC CHAU 170g EA C72 3727631.00 3727631.00 .25 18.00 .00 931907.75
-    3134867-9 DD VSPN DAHUONG co voi 120ml 368004213134867 EA C80 35181.90 35181.90 30.00 30.00 .00
+    FORMAT 1 (có VendorPartNo + 2 cột U/M):
+    SKU | Description | VendorPartNo | Sell U/M | Buy U/M | BuyCost | NetBuyCost | QtyOrdCS | QtyOrdPcs | QtyRecPcs | ExtendedCost
+    Ví dụ: 3571807-4 KDR dIieu NGOC CHAU 170g EA C72 3727631.00 3727631.00 .25 18.00 .00 931907.75
     
-    Trong đó:
-    - VendorPartNo = 368004213134867 (số dài) hoặc có thể không có
-    - EA, C72, C80 = đơn vị đo (sell Buy U/M, Buy U/M)
+    FORMAT 2 (không có VendorPartNo + 1 cột U/M):
+    SKU | Description | U/M | BuyCost | NetBuyCost | QtyOrdCS | QtyOrdPcs | QtyRecPcs | ExtendedCost
+    Ví dụ: 3539973-4 NSM duoc lieu NGOC CHAU 350ml EA 2077766.00 2077766.00 .10 3.00 .00 207776.60
     '''
     # Tìm SKU
     sku_match = re.search(r'\b(\d{6,8}[-/]\d)\b', line)
@@ -96,41 +95,55 @@ def parse_data_line(line: str) -> Optional[Dict]:
     if len(tokens) < 4:
         return None
     
-    # CHIẾN LƯỢC: Tìm đơn vị đo (EA, DD) + (C72, D00, C80, etc.)
-    # Pattern: 2-3 chữ cái + space + 1 chữ + 2-3 số
-    unit_pattern = r'\b([A-Z]{2,3})\s+([A-Z]\d{2,3}|[A-Z]{3})\b'
-    unit_match = re.search(unit_pattern, after_sku)
+    # CHIẾN LƯỢC: Tìm đơn vị đo
+    # Pattern 1: EA C72 (2 đơn vị - format 1)
+    # Pattern 2: EA (1 đơn vị - format 2)
     
-    if not unit_match:
+    # Thử tìm 2 đơn vị trước
+    unit_pattern_2 = r'\b([A-Z]{2,3})\s+([A-Z]\d{2,3}|[A-Z]{3})\b'
+    unit_match_2 = re.search(unit_pattern_2, after_sku)
+    
+    # Nếu không tìm thấy 2 đơn vị, thử tìm 1 đơn vị
+    unit_pattern_1 = r'\b([A-Z]{2,3})\b(?!\s+[A-Z]\d{2,3})'
+    unit_match_1 = re.search(unit_pattern_1, after_sku)
+    
+    # Ưu tiên format 1 (2 đơn vị)
+    if unit_match_2:
+        # FORMAT 1: Có 2 đơn vị
+        sell_um = unit_match_2.group(1)
+        buy_um = unit_match_2.group(2)
+        unit_start = unit_match_2.start()
+        unit_end = unit_match_2.end()
+        
+        desc_vendor_part = after_sku[:unit_start].strip()
+        numbers_part = after_sku[unit_end:].strip()
+        
+        # Phân tích Description + VendorPartNo
+        desc_vendor_tokens = desc_vendor_part.split()
+        description_tokens = []
+        vendor_part_no = ""
+        
+        for token in desc_vendor_tokens:
+            if token.isdigit() and len(token) >= 10:
+                vendor_part_no = token
+            else:
+                description_tokens.append(token)
+        
+        description = " ".join(description_tokens).strip()
+        
+    elif unit_match_1:
+        # FORMAT 2: Chỉ có 1 đơn vị (không có VendorPartNo)
+        sell_um = unit_match_1.group(1)
+        buy_um = ""
+        unit_start = unit_match_1.start()
+        unit_end = unit_match_1.end()
+        
+        description = after_sku[:unit_start].strip()
+        numbers_part = after_sku[unit_end:].strip()
+        vendor_part_no = ""
+        
+    else:
         return None
-    
-    sell_um = unit_match.group(1)  # EA, DD
-    buy_um = unit_match.group(2)   # C72, D00, C80
-    unit_start = unit_match.start()
-    unit_end = unit_match.end()
-    
-    # Description + VendorPartNo = phần trước đơn vị đo
-    desc_vendor_part = after_sku[:unit_start].strip()
-    
-    # Các số = phần sau đơn vị đo
-    numbers_part = after_sku[unit_end:].strip()
-    
-    # Phân tích desc_vendor_part:
-    # - Phần text = Description
-    # - Số dài cuối (nếu có) = VendorPartNo
-    desc_vendor_tokens = desc_vendor_part.split()
-    
-    description_tokens = []
-    vendor_part_no = ""
-    
-    for token in desc_vendor_tokens:
-        # Nếu token là số dài (>= 10 chữ số) → VendorPartNo
-        if token.isdigit() and len(token) >= 10:
-            vendor_part_no = token
-        else:
-            description_tokens.append(token)
-    
-    description = " ".join(description_tokens).strip()
     
     # Parse các số
     number_tokens = []
@@ -138,7 +151,7 @@ def parse_data_line(line: str) -> Optional[Dict]:
         if is_number(token):
             number_tokens.append(clean_number(token))
     
-    # Cần ít nhất 4 số: BuyCost, NetBuyCost, QtyOrdCS, Extended (tối thiểu)
+    # Cần ít nhất 4 số
     if len(number_tokens) < 4:
         return None
     
@@ -158,7 +171,7 @@ def parse_data_line(line: str) -> Optional[Dict]:
     elif len(number_tokens) >= 5:
         extended_cost = number_tokens[4]
     
-    # Validate extended cost (phải là số lớn)
+    # Validate extended cost
     try:
         ext_val = float(extended_cost)
         if ext_val < 10 and len(number_tokens) >= 5:

@@ -8,7 +8,9 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 
 from config import EXCEL_FILE, GOOGLE_DRIVE_AVAILABLE
 from excel_handler import init_excel, read_excel_data
+from excel_handler_format2 import init_excel_format2, read_excel_data_format2
 from pdf_processor import process_pdf
+from pdf_processor_format2 import process_pdf_format2
 from drive_manager import GoogleDriveManager
 from dialogs import DriveFilePicker, DriveFolderPicker
 from logger_handler import (
@@ -81,18 +83,6 @@ class LogViewerDialog:
             pady=5
         ).pack(side=tk.LEFT, padx=5)
         
-        tk.Button(
-            toolbar,
-            text="💾 Save As...",
-            command=self._save_as,
-            bg="#27ae60",
-            fg="white",
-            font=("Segoe UI", 9, "bold"),
-            cursor="hand2",
-            padx=15,
-            pady=5
-        ).pack(side=tk.LEFT, padx=5)
-        
         text_frame = tk.Frame(self.dialog, bg="white")
         text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -150,29 +140,13 @@ class LogViewerDialog:
                 messagebox.showinfo("Thành công", "Đã xóa log!")
             else:
                 messagebox.showerror("Lỗi", "Không thể xóa log")
-    
-    def _save_as(self):
-        """Lưu log ra file khác"""
-        file_path = filedialog.asksaveasfilename(
-            defaultextension=".txt",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
-        )
-        
-        if file_path:
-            try:
-                content = self.text_widget.get(1.0, tk.END)
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(content)
-                messagebox.showinfo("Thành công", f"Đã lưu: {file_path}")
-            except Exception as e:
-                messagebox.showerror("Lỗi", f"Không thể lưu file: {e}")
 
 
 class PDFExtractorApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Smart PDF Data Extractor Pro v2.1")
-        self.root.geometry("1400x700")
+        self.root.title("Smart PDF Data Extractor Pro v3.0 - Dual Format")
+        self.root.geometry("1500x750")
         self.root.configure(bg="#f0f0f0")
         
         self.pdf_files = []
@@ -180,12 +154,14 @@ class PDFExtractorApp:
         self.is_processing = False
         self.drive_manager = GoogleDriveManager()
         self.debug_mode = tk.BooleanVar(value=True)
+        self.current_format = tk.StringVar(value="format1")  # format1 hoặc format2
         
         init_log_files()
-        write_log("App started", "info")
+        write_log("App started - Dual Format Mode", "info")
         
         self.setup_ui()
         init_excel()
+        init_excel_format2()
     
     def setup_ui(self):
         """Tạo giao diện"""
@@ -210,7 +186,7 @@ class PDFExtractorApp:
         
         tk.Label(
             header_frame, 
-            text="📄 Smart PDF Data Extractor Pro v2.1",
+            text="📄 Smart PDF Data Extractor Pro v3.0 - Dual Format",
             font=("Segoe UI", 18, "bold"),
             bg="#2c3e50",
             fg="white"
@@ -229,8 +205,42 @@ class PDFExtractorApp:
             fg="#2c3e50"
         ).pack(pady=8)
         
+        # Format selector
+        format_frame = tk.Frame(left_frame, bg="#fff3cd", pady=8)
+        format_frame.pack(fill=tk.X, padx=10)
+        
+        tk.Label(
+            format_frame,
+            text="📋 Format:",
+            font=("Segoe UI", 9, "bold"),
+            bg="#fff3cd",
+            fg="#856404"
+        ).pack(side=tk.LEFT, padx=5)
+        
+        tk.Radiobutton(
+            format_frame,
+            text="Format 1 (Old)",
+            variable=self.current_format,
+            value="format1",
+            font=("Segoe UI", 9),
+            bg="#fff3cd",
+            activebackground="#fff3cd",
+            command=self.on_format_change
+        ).pack(side=tk.LEFT, padx=5)
+        
+        tk.Radiobutton(
+            format_frame,
+            text="Format 2 (New Order)",
+            variable=self.current_format,
+            value="format2",
+            font=("Segoe UI", 9),
+            bg="#fff3cd",
+            activebackground="#fff3cd",
+            command=self.on_format_change
+        ).pack(side=tk.LEFT, padx=5)
+        
         list_frame = tk.Frame(left_frame, bg="white")
-        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(10, 10))
         
         scrollbar = tk.Scrollbar(list_frame)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -255,7 +265,7 @@ class PDFExtractorApp:
         
         tk.Checkbutton(
             debug_frame,
-            text="🐛 Debug Mode (xem preview text trong log)",
+            text="🐛 Debug Mode",
             variable=self.debug_mode,
             font=("Segoe UI", 9),
             bg="white",
@@ -372,7 +382,7 @@ class PDFExtractorApp:
         self.process_btn.pack(pady=12)
     
     def _create_right_panel(self, parent):
-        """Panel output với đầy đủ cột"""
+        """Panel output"""
         right_frame = tk.Frame(parent, bg="white", relief=tk.RAISED, bd=1)
         right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
@@ -477,11 +487,9 @@ class PDFExtractorApp:
         tree_scroll_x = tk.Scrollbar(tree_frame, orient=tk.HORIZONTAL)
         tree_scroll_x.pack(side=tk.BOTTOM, fill=tk.X)
         
-        # CẬP NHẬT: Thêm các cột mới
         self.output_tree = ttk.Treeview(
             tree_frame,
-            columns=("Time", "File", "PO", "SKU", "Desc", "VendorPart", "SellUM", "BuyUM",
-                     "Buy", "Net", "QtyCS", "QtyOrdPcs", "QtyRecPcs", "Extended"),
+            columns=(),  # Will be set dynamically
             show="headings",
             yscrollcommand=tree_scroll_y.set,
             xscrollcommand=tree_scroll_x.set,
@@ -490,18 +498,6 @@ class PDFExtractorApp:
         
         tree_scroll_y.config(command=self.output_tree.yview)
         tree_scroll_x.config(command=self.output_tree.xview)
-        
-        # Columns với width phù hợp
-        columns = [
-            ("Time", 65), ("File", 100), ("PO", 90), ("SKU", 80),
-            ("Desc", 120), ("VendorPart", 115), ("SellUM", 60), ("BuyUM", 60),
-            ("Buy", 75), ("Net", 75), ("QtyCS", 60), 
-            ("QtyOrdPcs", 70), ("QtyRecPcs", 70), ("Extended", 85)
-        ]
-        
-        for col_id, width in columns:
-            self.output_tree.heading(col_id, text=col_id)
-            self.output_tree.column(col_id, width=width, anchor=tk.W)
         
         self.output_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
@@ -518,12 +514,18 @@ class PDFExtractorApp:
         """Footer"""
         tk.Label(
             self.root,
-            text="💡 Version 2.1 - Full Data Extraction | With 14 columns",
+            text="💡 Version 3.0 - Dual Format Support | Format 1: 14 cols | Format 2: 19 cols",
             font=("Segoe UI", 8),
             bg="#ecf0f1",
             fg="#7f8c8d",
             pady=8
         ).pack(side=tk.BOTTOM, fill=tk.X)
+    
+    def on_format_change(self):
+        """Khi thay đổi format"""
+        format_type = self.current_format.get()
+        self.log(f"📋 Chuyển sang {format_type.upper()}")
+        self.refresh_output()
     
     def log(self, message):
         """Ghi log vào UI và file"""
@@ -658,55 +660,96 @@ class PDFExtractorApp:
             write_log(f"Cleared all {count} files from list", "info")
     
     def refresh_output(self):
-        """Làm mới output với đầy đủ cột"""
+        """Làm mới output theo format đã chọn"""
+        format_type = self.current_format.get()
+        
+        # Clear existing tree
         for item in self.output_tree.get_children():
             self.output_tree.delete(item)
         
+        # Remove old columns
+        self.output_tree['columns'] = ()
+        
         try:
-            data = read_excel_data()
+            if format_type == "format1":
+                # Format 1: 14 columns
+                columns = ["Time", "File", "PO", "SKU", "Desc", "VendorPart", "SellUM", "BuyUM",
+                          "Buy", "Net", "QtyCS", "QtyOrdPcs", "QtyRecPcs", "Extended"]
+                col_widths = [65, 100, 90, 80, 120, 115, 60, 60, 75, 75, 60, 70, 70, 85]
+                
+                data = read_excel_data()
+                
+            else:  # format2
+                # Format 2: 19 columns
+                columns = ["Time", "File", "OrderNo", "OrderDate", "Supplier", "Contract",
+                          "OrderedBy", "DeliveredTo", "ForStore", "Article", "Desc",
+                          "OUType", "LV", "SKU_OU", "OUQty", "FreeQty", "NetPrice",
+                          "Unit", "TotalNet"]
+                col_widths = [65, 90, 90, 70, 70, 70, 100, 100, 100, 90, 120,
+                             60, 40, 60, 60, 60, 85, 50, 90]
+                
+                data = read_excel_data_format2()
             
+            # Setup columns
+            self.output_tree['columns'] = columns
+            for col_id, width in zip(columns, col_widths):
+                self.output_tree.heading(col_id, text=col_id)
+                self.output_tree.column(col_id, width=width, anchor=tk.W)
+            
+            # Insert data
             for row in data:
-                if len(row) >= 14:
-                    display_row = (
-                        row[0][:5] if row[0] else "",  # Time
-                        str(row[1])[:15] + "..." if len(str(row[1])) > 15 else row[1],  # File
-                        row[2],  # PO
-                        row[3],  # SKU
-                        str(row[4])[:20] + "..." if len(str(row[4])) > 20 else row[4],  # Desc
-                        str(row[5])[:12] + "..." if len(str(row[5])) > 12 else row[5],  # VendorPart
-                        row[6],  # SellUM
-                        row[7],  # BuyUM
-                        row[8],  # Buy
-                        row[9],  # Net
-                        row[10], # QtyCS
-                        row[11], # QtyOrdPcs
-                        row[12], # QtyRecPcs
-                        row[13]  # Extended
-                    )
+                if len(row) >= len(columns):
+                    display_row = []
+                    for i, val in enumerate(row[:len(columns)]):
+                        if i == 0:  # Time
+                            display_row.append(val[:5] if val else "")
+                        elif i == 1:  # Filename
+                            s = str(val)
+                            display_row.append(s[:15] + "..." if len(s) > 15 else s)
+                        elif i in [4, 10]:  # Description fields
+                            s = str(val)
+                            display_row.append(s[:20] + "..." if len(s) > 20 else s)
+                        elif i in [6, 7, 8] and format_type == "format2":  # Address fields
+                            s = str(val)
+                            display_row.append(s[:15] + "..." if len(s) > 15 else s)
+                        else:
+                            display_row.append(val)
+                    
                     self.output_tree.insert("", tk.END, values=display_row)
             
-            self.stats_label.config(text=f"Tổng: {len(data)} dòng")
+            self.stats_label.config(text=f"Tổng: {len(data)} dòng | Format: {format_type.upper()}")
             
         except Exception as e:
             self.log(f"⚠️ Lỗi refresh output: {e}")
             self.stats_label.config(text="Tổng: 0 dòng")
     
     def open_excel(self):
-        """Mở Excel"""
-        if os.path.exists(EXCEL_FILE):
-            try:
-                os.startfile(EXCEL_FILE)
-                self.log("📊 Đã mở Excel")
-                write_log("Opened Excel file", "info")
-            except:
-                messagebox.showinfo("Thông báo", f"File: {EXCEL_FILE}")
+        """Mở Excel theo format đã chọn"""
+        format_type = self.current_format.get()
+        
+        if format_type == "format1":
+            excel_file = EXCEL_FILE
         else:
-            init_excel()
+            from excel_handler_format2 import EXCEL_FILE_FORMAT2
+            excel_file = EXCEL_FILE_FORMAT2
+        
+        if os.path.exists(excel_file):
+            try:
+                os.startfile(excel_file)
+                self.log(f"📊 Đã mở Excel {format_type}")
+                write_log(f"Opened Excel file {format_type}", "info")
+            except:
+                messagebox.showinfo("Thông báo", f"File: {excel_file}")
+        else:
+            if format_type == "format1":
+                init_excel()
+            else:
+                init_excel_format2()
             self.log("✅ Đã tạo file Excel mới")
             try:
-                os.startfile(EXCEL_FILE)
+                os.startfile(excel_file)
             except:
-                messagebox.showinfo("Thông báo", f"Đã tạo file: {EXCEL_FILE}")
+                messagebox.showinfo("Thông báo", f"Đã tạo file: {excel_file}")
     
     def view_log(self, log_type):
         """Xem file log"""
@@ -715,16 +758,24 @@ class PDFExtractorApp:
     
     def clear_data(self):
         """Xóa dữ liệu Excel"""
+        format_type = self.current_format.get()
+        
         result = messagebox.askyesno(
             "Xác nhận",
-            "Xóa TẤT CẢ dữ liệu trong Excel?\n\n(Header sẽ được giữ lại)"
+            f"Xóa TẤT CẢ dữ liệu trong Excel {format_type.upper()}?\n\n(Header sẽ được giữ lại)"
         )
         
         if result:
-            from excel_handler import clear_excel_data
-            if clear_excel_data():
-                self.log("🗑️ Đã xóa dữ liệu Excel")
-                write_log("Cleared Excel data", "info")
+            if format_type == "format1":
+                from excel_handler import clear_excel_data
+                success = clear_excel_data()
+            else:
+                from excel_handler_format2 import clear_excel_data_format2
+                success = clear_excel_data_format2()
+            
+            if success:
+                self.log(f"🗑️ Đã xóa dữ liệu Excel {format_type}")
+                write_log(f"Cleared Excel data {format_type}", "info")
                 self.refresh_output()
                 messagebox.showinfo("Thành công", "Đã xóa dữ liệu!")
             else:
@@ -739,6 +790,7 @@ class PDFExtractorApp:
         if self.is_processing:
             messagebox.showinfo("Thông báo", "Đang xử lý...")
             return
+        
         self.is_processing = True
         self.process_btn.config(state=tk.DISABLED, text="⏳ Đang xử lý...")
         
@@ -752,28 +804,29 @@ class PDFExtractorApp:
         failed = 0
         skipped = 0
         
+        format_type = self.current_format.get()
+        
         self.log("\n" + "="*50)
-        self.log(f"🚀 Bắt đầu xử lý {total} files")
+        self.log(f"🚀 Bắt đầu xử lý {total} files - {format_type.upper()}")
         if self.debug_mode.get():
-            self.log("🐛 DEBUG MODE: ON - Preview text trong log")
+            self.log("🐛 DEBUG MODE: ON")
         self.log("="*50 + "\n")
         
-        write_log(f"Started processing {total} files", "info")
+        write_log(f"Started processing {total} files - {format_type}", "info")
         
         temp_dir = tempfile.mkdtemp()
         
         for i, pdf_path in enumerate(self.pdf_files, 1):
-            filename_for_log = ""  # Khởi tạo sớm để tránh lỗi
+            filename_for_log = ""
             
             try:
                 self.status_label.config(text=f"Đang xử lý {i}/{total}...")
                 self.progress['value'] = (i / total) * 100
                 
-                # XÁC ĐỊNH TÊN FILE NGAY TỪ ĐẦU
+                # Xác định tên file
                 if pdf_path.startswith("drive://"):
                     file_id = pdf_path.replace("drive://", "")
                     
-                    # Tìm tên file từ drive_files
                     file_name = None
                     for fid, fname in self.drive_files:
                         if fid == file_id:
@@ -794,39 +847,42 @@ class PDFExtractorApp:
                     write_log(f"Skipped already processed file: {filename_for_log}", "info")
                     continue
                 
-                # XỬ LÝ FILE
+                # Xử lý file
                 if pdf_path.startswith("drive://"):
                     self.log(f"☁️ [{i}/{total}] Đang tải: {filename_for_log}")
                     
                     temp_path = os.path.join(temp_dir, filename_for_log)
                     
-                    # Download file
                     download_success = self.drive_manager.download_file(file_id, temp_path)
                     if not download_success:
                         raise Exception("Không thể tải file từ Drive")
                     
-                    # Process
-                    items = process_pdf(temp_path, self.log, self.debug_mode.get())
+                    # Process theo format
+                    if format_type == "format1":
+                        items = process_pdf(temp_path, self.log, self.debug_mode.get())
+                    else:
+                        items = process_pdf_format2(temp_path, self.log, self.debug_mode.get())
                     
-                    # Xóa file tạm
                     try:
                         os.remove(temp_path)
                     except:
                         pass
                 else:
                     self.log(f"📄 [{i}/{total}] Đang xử lý: {filename_for_log}")
-                    items = process_pdf(pdf_path, self.log, self.debug_mode.get())
+                    
+                    if format_type == "format1":
+                        items = process_pdf(pdf_path, self.log, self.debug_mode.get())
+                    else:
+                        items = process_pdf_format2(pdf_path, self.log, self.debug_mode.get())
                 
-                # THÀNH CÔNG
+                # Thành công
                 success += 1
                 self.log(f"✅ [{i}/{total}] Thành công: {items} items\n")
                 write_success(filename_for_log)
                 
             except Exception as e:
-                # THẤT BẠI - GHI ERROR LOG
                 failed += 1
                 
-                # Đảm bảo có tên file
                 if not filename_for_log:
                     if pdf_path.startswith("drive://"):
                         filename_for_log = f"Drive_File_{pdf_path[8:16]}"
@@ -836,14 +892,13 @@ class PDFExtractorApp:
                 error_msg = str(e)
                 self.log(f"❌ [{i}/{total}] Lỗi '{filename_for_log}': {error_msg}\n")
                 
-                # GHI VÀO ERROR LOG (tên file + lý do)
                 write_error(filename_for_log, error_msg)
                 write_log(f"Failed to process '{filename_for_log}': {error_msg}", "error")
         
         # Dọn dẹp
         shutil.rmtree(temp_dir, ignore_errors=True)
         
-        # KẾT QUẢ
+        # Kết quả
         self.log("="*50)
         self.log("🎉 HOÀN TẤT")
         self.log("="*50)
@@ -854,10 +909,7 @@ class PDFExtractorApp:
         if failed > 0:
             self.log(f"\n💡 Xem danh sách file thất bại trong Error Log")
         
-        if self.debug_mode.get():
-            self.log("\n💡 TIP: Debug mode ON - xem preview text trong log")
-        
-        write_log(f"Processing completed: {success} success, {skipped} skipped, {failed} failed", "info")
+        write_log(f"Processing completed: {success} success, {skipped} skipped, {failed} failed - {format_type}", "info")
         
         self.status_label.config(text=f"Hoàn tất: {success}/{total} (skip: {skipped}, fail: {failed})")
         self.progress['value'] = 100
@@ -869,5 +921,5 @@ class PDFExtractorApp:
         
         messagebox.showinfo(
             "Hoàn tất",
-            f"✅ Thành công: {success}\n⏭️ Bỏ qua: {skipped}\n❌ Thất bại: {failed}"
+            f"Format: {format_type.upper()}\n\n✅ Thành công: {success}\n⏭️ Bỏ qua: {skipped}\n❌ Thất bại: {failed}"
         )
