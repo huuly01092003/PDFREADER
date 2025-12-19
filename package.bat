@@ -1,138 +1,182 @@
 @echo off
+chcp 65001 >nul
 echo ============================================
-echo  Create Distribution Package
+echo  TẠO GÓI PHÂN PHỐI
 echo ============================================
 echo.
 
-:: Check if exe exists
+:: Kiểm tra exe
 if not exist "PDF_Extractor_Pro.exe" (
-    echo [ERROR] PDF_Extractor_Pro.exe not found!
-    echo Please run build.bat first!
+    echo [LỖI] Không tìm thấy PDF_Extractor_Pro.exe
+    echo Chạy build_fast.bat trước!
     pause
     exit /b 1
 )
 
-:: Create distribution folder
-set DIST_FOLDER=PDF_Extractor_Pro_Distribution
-if exist "%DIST_FOLDER%" rmdir /s /q "%DIST_FOLDER%"
-mkdir "%DIST_FOLDER%"
+:: Tạo thư mục phân phối
+set DIST=PDF_Extractor_Pro_v3.0_Release
+if exist "%DIST%" rmdir /s /q "%DIST%"
+mkdir "%DIST%"
 
-echo [1/4] Copying executable...
-copy "PDF_Extractor_Pro.exe" "%DIST_FOLDER%\"
+echo [1/4] Sao chép file thực thi...
+copy "PDF_Extractor_Pro.exe" "%DIST%\"
+echo [OK] Copied exe
+echo.
 
-echo [2/4] Creating README...
+echo [2/4] Tạo README...
 (
-echo Smart PDF Data Extractor Pro v3.0 - Dual Format
-echo ================================================
+echo ========================================
+echo  PDF EXTRACTOR PRO v3.0
+echo  HƯỚNG DẪN SỬ DỤNG
+echo ========================================
 echo.
-echo QUICK START:
-echo 1. Double-click PDF_Extractor_Pro.exe to run
-echo 2. No installation required!
+echo KHỞI ĐỘNG:
+echo   • Double-click: PDF_Extractor_Pro.exe
+echo   • Không cần cài đặt!
 echo.
-echo FEATURES:
-echo - Format 1: Old PO format (14 columns)
-echo - Format 2: New Order format (19 columns)
-echo - Local files and Google Drive support
-echo - Auto duplicate detection
-echo - Debug mode for troubleshooting
+echo TÍNH NĂNG:
+echo   ✓ 2 Format PDF (Old PO + New Order^)
+echo   ✓ Xử lý từ máy tính hoặc Google Drive
+echo   ✓ Tự động loại bỏ trùng lặp
+echo   ✓ Debug mode để khắc phục lỗi
+echo   ✓ Log chi tiết (success/error^)
 echo.
-echo GOOGLE DRIVE SETUP (Optional):
-echo 1. Place service_account.json in the same folder
-echo 2. Share your Drive folders with the service account email
-echo 3. Restart the app
+echo CÀI ĐẶT GOOGLE DRIVE (tùy chọn^):
+echo   1. Tạo Service Account tại:
+echo      console.cloud.google.com
+echo   2. Tải file JSON key
+echo   3. Đổi tên: service_account.json
+echo   4. Copy vào cùng thư mục với .exe
+echo   5. Share folder Drive với email trong JSON
 echo.
-echo OUTPUTS:
-echo - output.xlsx (Format 1)
-echo - output_format2.xlsx (Format 2)
-echo - app_log.txt (processing log)
-echo - success_log.txt (successful files)
-echo - error_log.txt (failed files)
+echo OUTPUT:
+echo   • output.xlsx (Format 1^)
+echo   • output_format2.xlsx (Format 2^)
+echo   • app_log.txt
+echo   • success_log.txt
+echo   • error_log.txt
 echo.
-echo SYSTEM REQUIREMENTS:
-echo - Windows 10/11
-echo - 4GB RAM minimum
-echo - 500MB free disk space
+echo YÊU CẦU HỆ THỐNG:
+echo   • Windows 10/11 (64-bit^)
+echo   • 4GB RAM
+echo   • 100MB ổ cứng trống
 echo.
-echo TROUBLESHOOTING:
-echo - If app doesn't start: Install Visual C++ Redistributable
-echo - If Google Drive fails: Check service_account.json
-echo - If PDF processing fails: Enable Debug Mode
+echo KHẮ C PHỤC SỰ CỐ:
+echo   • App không chạy?
+echo     → Cài Visual C++ Redistributable
+echo     → https://aka.ms/vs/17/release/vc_redist.x64.exe
+echo.
+echo   • Không đọc được PDF?
+echo     → Bật Debug Mode
+echo     → Kiểm tra Error Log
+echo.
+echo   • Google Drive lỗi?
+echo     → Kiểm tra service_account.json
+echo     → Đảm bảo đã share folder
+echo.
+echo LIÊN HỆ HỖ TRỢ:
+echo   Email: support@example.com
 echo.
 echo Version: 3.0
-echo Build Date: %DATE%
-) > "%DIST_FOLDER%\README.txt"
+echo Build: %DATE% %TIME%
+) > "%DIST%\README.txt"
+echo [OK] Created README
+echo.
 
-echo [3/4] Creating Quick Start Guide...
+echo [3/4] Tạo Quick Start Guide...
 (
-echo QUICK START GUIDE
-echo =================
+echo ========================================
+echo  QUICK START - 3 BƯỚC
+echo ========================================
 echo.
-echo Step 1: Run the Application
-echo   - Double-click PDF_Extractor_Pro.exe
+echo BƯỚC 1: CHỌN FORMAT
+echo   □ Format 1: PO cũ (14 cột^)
+echo   □ Format 2: Order mới (19 cột^)
 echo.
-echo Step 2: Select Format
-echo   - Format 1 (Old): For legacy PO documents
-echo   - Format 2 (New): For new order documents
+echo BƯỚC 2: THÊM FILE
+echo   □ File: Chọn từng file PDF
+echo   □ Folder: Chọn cả thư mục
+echo   □ Drive F: Chọn file từ Drive
+echo   □ Drive D: Chọn folder từ Drive
 echo.
-echo Step 3: Add Files
-echo   - File: Select individual PDFs
-echo   - Folder: Select entire folder
-echo   - Drive F: Select files from Google Drive
-echo   - Drive D: Select entire Drive folder
+echo BƯỚC 3: XỬ LÝ
+echo   □ Click "Bắt đầu xử lý"
+echo   □ Đợi hoàn tất
+echo   □ Mở Excel xem kết quả
 echo.
-echo Step 4: Process
-echo   - Click "Start Processing"
-echo   - Wait for completion
-echo   - Check output Excel file
+echo ========================================
+echo  MẸO VẶT
+echo ========================================
 echo.
-echo TIPS:
-echo - Enable Debug Mode to see detailed processing info
-echo - Use Refresh button to update results
-echo - Check Error Log if files fail
-echo - Excel files are created automatically
+echo • Debug Mode: Xem chi tiết quá trình
+echo • Refresh: Cập nhật kết quả
+echo • Clear: Xóa dữ liệu Excel
+echo • Log Viewer: Xem lịch sử xử lý
 echo.
-echo GOOGLE DRIVE:
-echo 1. Get service_account.json from Google Cloud Console
-echo 2. Place it in the same folder as the .exe
-echo 3. Share folders with service account email
-echo 4. Click "Drive F" or "Drive D" to access
-) > "%DIST_FOLDER%\QUICK_START.txt"
+echo • File trùng sẽ tự động bỏ qua
+echo • Excel tự động tạo nếu chưa có
+echo • Log lưu vĩnh viễn để tra cứu
+echo.
+echo ========================================
+echo  GOOGLE DRIVE SETUP
+echo ========================================
+echo.
+echo 1. Vào: console.cloud.google.com
+echo 2. Tạo project mới
+echo 3. Enable Google Drive API
+echo 4. Tạo Service Account
+echo 5. Download JSON key
+echo 6. Đổi tên: service_account.json
+echo 7. Share Drive folder với email trong JSON
+echo 8. Chạy lại app
+echo.
+echo Xong! Giờ có thể dùng Drive F và Drive D
+) > "%DIST%\QUICK_START.txt"
+echo [OK] Created Quick Start
+echo.
 
-echo [4/4] Creating service_account template...
+echo [4/4] Tạo template Service Account...
 (
 echo {
 echo   "type": "service_account",
 echo   "project_id": "YOUR_PROJECT_ID",
-echo   "private_key_id": "YOUR_PRIVATE_KEY_ID",
-echo   "private_key": "YOUR_PRIVATE_KEY",
-echo   "client_email": "YOUR_SERVICE_ACCOUNT_EMAIL",
+echo   "private_key_id": "YOUR_KEY_ID",
+echo   "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n",
+echo   "client_email": "your-service-account@project.iam.gserviceaccount.com",
 echo   "client_id": "YOUR_CLIENT_ID",
 echo   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
 echo   "token_uri": "https://oauth2.googleapis.com/token",
-echo   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-echo   "client_x509_cert_url": "YOUR_CERT_URL"
+echo   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs"
 echo }
-) > "%DIST_FOLDER%\service_account.json.template"
-
+) > "%DIST%\service_account.json.TEMPLATE"
+echo [OK] Created template
 echo.
-echo Creating ZIP archive...
-powershell -command "Compress-Archive -Path '%DIST_FOLDER%\*' -DestinationPath 'PDF_Extractor_Pro_v3.0.zip' -Force"
+
+:: Tạo ZIP
+echo Đang tạo file ZIP...
+powershell -command "Compress-Archive -Path '%DIST%\*' -DestinationPath 'PDF_Extractor_Pro_v3.0.zip' -Force"
 
 if exist "PDF_Extractor_Pro_v3.0.zip" (
     echo.
     echo ============================================
-    echo  Package Complete!
+    echo  HOÀN TẤT!
     echo ============================================
     echo.
-    echo Distribution folder: %DIST_FOLDER%
-    echo ZIP file: PDF_Extractor_Pro_v3.0.zip
+    echo Thư mục: %DIST%
+    echo File ZIP: PDF_Extractor_Pro_v3.0.zip
     echo.
-    echo File size:
-    dir /s "PDF_Extractor_Pro_v3.0.zip" | find "PDF_Extractor_Pro_v3.0.zip"
+    for %%A in (PDF_Extractor_Pro_v3.0.zip) do (
+        set size=%%~zA
+        set /a sizeMB=%%~zA/1024/1024
+    )
+    echo Kích thước: !sizeMB! MB
     echo.
-    echo Ready to distribute!
+    echo SẴN SÀNG PHÂN PHỐI!
+    echo.
+    echo Gửi file ZIP cho người dùng
+    echo Họ chỉ cần giải nén và chạy .exe
 ) else (
-    echo [ERROR] Failed to create ZIP file!
+    echo [LỖI] Không tạo được ZIP!
 )
 
 echo.

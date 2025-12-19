@@ -1,79 +1,106 @@
 @echo off
+chcp 65001 >nul
 echo ============================================
-echo  Smart PDF Extractor Pro - Build Script
+echo  PDF Extractor Pro - OPTIMIZED BUILD
 echo ============================================
 echo.
 
-:: Check Python
-echo [1/5] Checking Python...
+:: Kiểm tra Python
+echo [1/6] Kiểm tra Python...
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python not found!
-    echo Please install Python from: https://www.python.org/downloads/
+    echo [LỖI] Chưa cài Python!
+    echo Tải tại: https://www.python.org/downloads/
     pause
     exit /b 1
 )
-echo [OK] Python found!
+echo [OK] Python found
 echo.
 
-:: Install PyInstaller
-echo [2/5] Installing PyInstaller...
-pip install pyinstaller
+:: Cài PyInstaller
+echo [2/6] Cài PyInstaller...
+pip install pyinstaller --upgrade --quiet
 if errorlevel 1 (
-    echo [ERROR] Failed to install PyInstaller!
+    echo [LỖI] Không cài được PyInstaller!
     pause
     exit /b 1
 )
-echo [OK] PyInstaller installed!
+echo [OK] PyInstaller ready
 echo.
 
-:: Clean previous builds
-echo [3/5] Cleaning previous builds...
+:: Dọn dẹp
+echo [3/6] Dọn dẹp build cũ...
 if exist "build" rmdir /s /q "build"
 if exist "dist" rmdir /s /q "dist"
+if exist "*.spec" del /q "*.spec"
 if exist "PDF_Extractor_Pro.exe" del /q "PDF_Extractor_Pro.exe"
-echo [OK] Cleaned!
+echo [OK] Cleaned
 echo.
 
-:: Build with PyInstaller
-echo [4/5] Building executable (this may take 2-3 minutes)...
+:: Build với PyInstaller
+echo [4/6] Building executable...
+echo      (Có thể mất 3-5 phút)
 echo.
-pyinstaller build.spec --clean
+
+pyinstaller --clean ^
+    --onefile ^
+    --windowed ^
+    --optimize=2 ^
+    --name=PDF_Extractor_Pro ^
+    --icon=icon.ico ^
+    --version-file=version_info.txt ^
+    --upx-dir=upx ^
+    --hidden-import=pdfplumber ^
+    --hidden-import=pytesseract ^
+    --hidden-import=openpyxl ^
+    --hidden-import=google.auth ^
+    --hidden-import=google.oauth2.service_account ^
+    --hidden-import=googleapiclient.discovery ^
+    --exclude-module=matplotlib ^
+    --exclude-module=numpy ^
+    --exclude-module=pandas ^
+    --exclude-module=pytest ^
+    --exclude-module=IPython ^
+    main.py
+
 if errorlevel 1 (
-    echo [ERROR] Build failed!
+    echo [LỖI] Build failed!
     pause
     exit /b 1
 )
 echo.
-echo [OK] Build complete!
+echo [OK] Build complete
 echo.
 
-:: Move exe to root
-echo [5/5] Finalizing...
+:: Di chuyển exe
+echo [5/6] Hoàn tất...
 if exist "dist\PDF_Extractor_Pro.exe" (
     move /y "dist\PDF_Extractor_Pro.exe" "PDF_Extractor_Pro.exe"
-    echo [OK] Executable moved to root folder
+    echo [OK] Đã di chuyển exe
 ) else (
-    echo [ERROR] Executable not found in dist folder!
+    echo [LỖI] Không tìm thấy exe!
     pause
     exit /b 1
 )
 echo.
 
-:: Clean up build artifacts
-echo Cleaning build artifacts...
+:: Dọn dẹp thư mục build
+echo [6/6] Dọn dẹp...
 rmdir /s /q "build"
 rmdir /s /q "dist"
-del /q "PDF_Extractor_Pro.spec" 2>nul
+del /q "*.spec" 2>nul
 echo.
 
+:: Hiển thị kết quả
 echo ============================================
-echo  Build Complete!
+echo  BUILD HOÀN TẤT!
 echo ============================================
 echo.
-echo Executable: PDF_Extractor_Pro.exe
+echo File: PDF_Extractor_Pro.exe
+for %%A in (PDF_Extractor_Pro.exe) do echo Size: %%~zA bytes (%%~zK KB)
 echo.
-echo To create distribution package:
-echo   Run: package.bat
+echo Bước tiếp theo:
+echo   1. Test: PDF_Extractor_Pro.exe
+echo   2. Package: package_final.bat
 echo.
 pause
