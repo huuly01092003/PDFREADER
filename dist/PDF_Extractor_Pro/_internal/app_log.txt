@@ -1,0 +1,4 @@
+# Log file created at 2025-12-19 08:51:47
+[2025-12-19 08:51:47] [INFO] App started - Dual Format Mode
+[2025-12-19 08:51:59] [INFO] App started - Dual Format Mode
+[2025-12-19 08:52:04] [INFO] App started - Dual Format Mode

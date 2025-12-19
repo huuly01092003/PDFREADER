@@ -1,7 +1,12 @@
+"""
+Optimized main.py - Faster startup with lazy imports
+"""
 import tkinter as tk
-from gui_app import PDFExtractorApp
 
 def main():
+    # Lazy import - chỉ import khi cần
+    from gui_app import PDFExtractorApp
+    
     root = tk.Tk()
     app = PDFExtractorApp(root)
     root.mainloop()
